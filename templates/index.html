@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Behavioral Authentication</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<h2>Behavioral Authentication</h2>
+
+<input type="text" id="username" placeholder="Username"><br><br>
+<input type="password" id="password" placeholder="Password"><br><br>
+
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+
+<h3>Typing Pattern Graph</h3>
+<canvas id="chart" width="400" height="200"></canvas>
+
+<script>
+window.onload = function() {
+
+    let keystrokeData = [];
+    let lastTime = null;
+    let chart;
+
+    const passwordField = document.getElementById("password");
+
+    function drawGraph(data) {
+        const ctx = document.getElementById('chart').getContext('2d');
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map((_, i) => i + 1),
+                datasets: [{
+                    label: 'Keystroke Timing',
+                    data: data,
+                    borderWidth: 2
+                }]
+            }
+        });
+    }
+
+    passwordField.addEventListener("keydown", function() {
+        let currentTime = new Date().getTime();
+
+        if (lastTime !== null) {
+            let diff = currentTime - lastTime;
+            keystrokeData.push(diff);
+            drawGraph(keystrokeData);
+        }
+
+        lastTime = currentTime;
+    });
+
+    window.resetData = function() {
+        keystrokeData = [];
+        lastTime = null;
+        drawGraph([]);
+    };
+
+    window.register = function() {
+        let username = document.getElementById("username").value;
+        let password = passwordField.value;
+
+        fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password, keystrokes: keystrokeData})
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            resetData();
+        });
+    };
+
+    window.login = function() {
+        let username = document.getElementById("username").value;
+        let password = passwordField.value;
+
+        fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username, password, keystrokes: keystrokeData})
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            resetData();
+        });
+    };
+
+};
+</script>
+
+</body>
+</html>
